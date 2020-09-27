@@ -45,10 +45,21 @@ plot_grid(i,o,u,p)
 
 
 # examine spin rates for pitches
-q <- ggplot(x,aes(spin_slider))+geom_histogram(color="black", fill="white", bins = 40, na.rm = TRUE)
-r <- ggplot(x,aes(spin_changeup))+geom_histogram(color="black", fill="white", bins = 40, na.rm = TRUE)
-s <- ggplot(x,aes(spin_curve))+geom_histogram(color="black", fill="white", bins = 40, na.rm = TRUE)
-t <- ggplot(x,aes(spin_fastball))+geom_histogram(color="black", fill="white", bins = 40, na.rm = TRUE)
+q <- ggplot(x,aes(spin_slider))+geom_histogram(color="black", fill="white", bins = 40, na.rm = TRUE) +
+        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
+                         axis.text = element_text(size = 12))
+
+r <- ggplot(x,aes(spin_changeup))+geom_histogram(color="black", fill="white", bins = 40, na.rm = TRUE) +
+        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
+                         axis.text = element_text(size = 12))
+
+s <- ggplot(x,aes(spin_curve))+geom_histogram(color="black", fill="white", bins = 40, na.rm = TRUE) +
+        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
+                         axis.text = element_text(size = 12))
+
+t <- ggplot(x,aes(spin_fastball))+geom_histogram(color="black", fill="white", bins = 40, na.rm = TRUE) +
+        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
+                         axis.text = element_text(size = 12))
 
 plot_grid(q,r,s,t)
 
