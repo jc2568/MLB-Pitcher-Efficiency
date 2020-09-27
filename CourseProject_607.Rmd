@@ -14,6 +14,18 @@ knitr::opts_chunk$set(echo = TRUE)
 R Markdown was used to author this HTML document using a dataset obtain from
 baseball savant (MLB, 2020).
 
+## Project Description
+
+Major League Baseball pitchers can manipulate the movement of a ball by increasing
+or decreasing the spin rate of a baseball (Nagami, 2013). There are three forces
+that influence ball movement: drag force due to air movement, gravity, and the
+Magnus force, which produces vertical and lateral ball movement (Nagami, 2013).
+Because on any given day a pitcher has little to no control on how the gravity
+or the drag force influences ball movement, manipulating the spin rate of a
+baseball can directly produce a greater or lesser Magnus force.
+
+
+
 ```{r }
 # load the required libraries for project
 library(dplyr); library(ggplot2); library(cowplot); library(corrplot); library(ggpubr)
@@ -50,3 +62,4 @@ Note that the `echo = FALSE` parameter was added to the code chunk to prevent pr
 
 Advanced Media, MLB. (2020). Retrieved from https://baseballsavant.mlb.com/leaderboard/custom?year=2019&type=pitcher&filter=&sort=4&sortDir=asc&min=q&selections=xba,xslg,xwoba,xobp,xiso,exit_velocity_avg,launch_angle_avg,barrel_batted_rate,&chart=false&x=xba&y=xba&r=no&chartType=beeswarm. Date Accessed: Sept 27, 2020.
 
+Nagami, T., Higuchi, T., & Kanosue, K. (2013). How baseball spin influences the performance of a pitcher. The Journal of Physical Fitness and Sports Medicine, 2(1), 63-68. doi:10.7600/jpfsm.2.63
