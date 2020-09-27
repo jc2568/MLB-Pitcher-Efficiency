@@ -74,19 +74,35 @@ corrplot(cor(y,use = "complete.obs"), type = "upper", tl.col = "black",
          tl.srt = 45, tl.cex = 1.2, cl.cex = 1.2, col=colorRampPalette(c("blue","white","red"))(200))
 
 
-
 # EDA plots
 a <- ggplot(y,aes(spin_slider,percent_strikeouts))+geom_point(na.rm = TRUE) +
-        geom_smooth(method=lm, se=FALSE, fullrange=TRUE,na.rm = TRUE)
+        stat_smooth(method = "lm", se = FALSE, na.rm = TRUE, color = "red", size = 1.5) +
+        stat_cor(label.x = 1750, label.y = 45, na.rm = TRUE, size = 5) +
+        stat_regline_equation(label.x = 1750, label.y = 42, na.rm = TRUE, size = 5) +
+        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
+                         axis.text = element_text(size = 12))
 
 b <- ggplot(y,aes(spin_changeup,percent_strikeouts))+geom_point(na.rm = TRUE) +
-        geom_smooth(method=lm, se=FALSE, fullrange=TRUE,na.rm = TRUE)
+        stat_smooth(method = "lm", se = FALSE, na.rm = TRUE, color = "red", size = 1.5) +
+        stat_cor(label.x = 2250, label.y = 45, na.rm = TRUE, size = 5) +
+        stat_regline_equation(label.x = 2250, label.y = 42, na.rm = TRUE, size = 5) +
+        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
+                         axis.text = element_text(size = 12))
 
 c <- ggplot(y,aes(spin_curve,percent_strikeouts))+geom_point(na.rm = TRUE) +
-        geom_smooth(method=lm, se=FALSE, fullrange=TRUE,na.rm = TRUE)
+        stat_smooth(method = "lm", se = FALSE, na.rm = TRUE, color = "red", size = 1.5) +
+        stat_cor(label.x = 1500, label.y = 45, na.rm = TRUE, size = 5) +
+        stat_regline_equation(label.x = 1500, label.y = 42, na.rm = TRUE, size = 5) +
+        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
+                         axis.text = element_text(size = 12))
 
 d <- ggplot(y,aes(spin_fastball,percent_strikeouts))+geom_point(na.rm = TRUE) +
-        geom_smooth(method=lm, se=FALSE, fullrange=TRUE,na.rm = TRUE)
+        stat_smooth(method = "lm", se = FALSE, na.rm = TRUE, color = "red", size = 1.5) +
+        stat_cor(label.x = 1750, label.y = 45, na.rm = TRUE, size = 5) +
+        stat_regline_equation(label.x = 1750, label.y = 42, na.rm = TRUE, size = 5) +
+        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
+                         axis.text = element_text(size = 12))
+
 
 plot_grid(a,b,c,d)
 
