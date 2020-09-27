@@ -3,7 +3,8 @@
 
 
 # load libraries
-library(dplyr); library(ggplot2); library(cowplot); library(corrplot); library(ggpubr)
+library(dplyr); library(ggplot2); library(cowplot); library(corrplot); library(ggpubr);
+library(tidyr)
 
 
 # remove variables saved in environment
@@ -75,6 +76,30 @@ corrplot(cor(y,use = "complete.obs"), type = "upper", tl.col = "black",
 
 
 # EDA plots
+d <- y[,c(3,13,16,19,22)]
+c <- d[,1:2]
+c1 <- d[,c(1,3)]
+c2 <- d[,c(1,4)]
+c3 <- d[,c(1,5)]
+
+c<-mutate(c,"spin_slider")
+colnames(c) <- c("percent_strikeouts", "spin_rate", "pitch")
+c1<-mutate(c1,"spin_changeup")
+colnames(c1) <- c("percent_strikeouts", "spin_rate", "pitch")
+c2<-mutate(c2,"spin_curve")
+colnames(c2) <- c("percent_strikeouts", "spin_rate", "pitch")
+c3<-mutate(c3,"spin_fastball")
+colnames(c3) <- c("percent_strikeouts", "spin_rate", "pitch")
+e<-rbind(c,c1,c2,c3)
+
+ggplot(e,aes(spin_rate,percent_strikeouts,color=pitch,shape=pitch)) + geom_point(na.rm = TRUE) +
+        theme_bw() + theme(axis.title = element_text(face = "bold",size = 20),
+                           axis.text = element_text(size = 12),
+                           legend.text = element_text(size = 12),
+                           legend.title = element_text(face = "bold", size = 16)) +
+        guides(colour = guide_legend(override.aes = list(size=3, stroke=1.5)))
+        
+
 a <- ggplot(y,aes(spin_slider,percent_strikeouts))+geom_point(na.rm = TRUE) +
         stat_smooth(method = "lm", se = FALSE, na.rm = TRUE, color = "red", size = 1.5) +
         stat_cor(label.x = 1750, label.y = 45, na.rm = TRUE, size = 5) +
@@ -105,6 +130,16 @@ d <- ggplot(y,aes(spin_fastball,percent_strikeouts))+geom_point(na.rm = TRUE) +
 
 
 plot_grid(a,b,c,d)
+
+
+
+
+
+
+
+
+
+
 
 
 
