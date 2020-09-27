@@ -24,15 +24,27 @@ colnames(x) <- c("last_name", "first_name", "year", "player_age", "games", "inni
 summary(x)
 
 
-# evaluate range of starts for all pitchers
-i<-ggplot(x,aes(strikeouts))+geom_histogram(color="black", fill="white", bins = 40, na.rm = TRUE)
-o<-ggplot(x,aes(innings_pitched)) + geom_histogram(color="black", fill="white", bins = 40,na.rm = TRUE)
-u<-ggplot(x,aes(quality_starts)) + geom_histogram(color="black", fill="white", bins = 40,na.rm = TRUE)
-p<-ggplot(x,aes(games)) + geom_histogram(color="black", fill="white", bins = 40,na.rm = TRUE)
+# histograms for strikeouts, innings pitched, quality starts, and games
+i <- ggplot(x,aes(strikeouts)) + geom_histogram(color="black", fill="white", bins = 40, na.rm = TRUE) +
+        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
+                         axis.text = element_text(size = 12))
+
+o <- ggplot(x,aes(innings_pitched)) + geom_histogram(color="black", fill="white", bins = 40,na.rm = TRUE) +
+        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
+                         axis.text = element_text(size = 12))
+
+u <- ggplot(x,aes(quality_starts)) + geom_histogram(color="black", fill="white", bins = 40,na.rm = TRUE) +
+        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
+                         axis.text = element_text(size = 12))
+
+p <- ggplot(x,aes(games)) + geom_histogram(color="black", fill="white", bins = 40,na.rm = TRUE) +
+        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
+                         axis.text = element_text(size = 12))
 
 plot_grid(i,o,u,p)
 
 
+# examine spin rates for pitches
 q <- ggplot(x,aes(spin_slider))+geom_histogram(color="black", fill="white", bins = 40, na.rm = TRUE)
 r <- ggplot(x,aes(spin_changeup))+geom_histogram(color="black", fill="white", bins = 40, na.rm = TRUE)
 s <- ggplot(x,aes(spin_curve))+geom_histogram(color="black", fill="white", bins = 40, na.rm = TRUE)
