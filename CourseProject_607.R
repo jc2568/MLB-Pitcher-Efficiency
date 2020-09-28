@@ -71,7 +71,7 @@ y <- x[,c(12:19,22:35)]
 
 
 # correlation table
-corrplot(cor(y,use = "complete.obs"), type = "upper", tl.col = "black", 
+corrplot(cor(y[,c(1:4,11:22)],use = "complete.obs"), type = "upper", tl.col = "black", 
          tl.srt = 45, tl.cex = 1.2, cl.cex = 1.2, col=colorRampPalette(c("blue","white","red"))(200))
 
 
