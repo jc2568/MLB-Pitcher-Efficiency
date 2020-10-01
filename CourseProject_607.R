@@ -30,19 +30,12 @@ i <- ggplot(x,aes(strikeouts)) + geom_histogram(color="black", fill="white", bin
         theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
                          axis.text = element_text(size = 12))
 
-o <- ggplot(x,aes(innings_pitched)) + geom_histogram(color="black", fill="white", bins = 40,na.rm = TRUE) +
+o <- ggplot(x,aes(percent_strikeouts)) + geom_histogram(color="black", fill="white", bins = 40,na.rm = TRUE) +
         theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
                          axis.text = element_text(size = 12))
 
-u <- ggplot(x,aes(quality_starts)) + geom_histogram(color="black", fill="white", bins = 40,na.rm = TRUE) +
-        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
-                         axis.text = element_text(size = 12))
 
-p <- ggplot(x,aes(games)) + geom_histogram(color="black", fill="white", bins = 40,na.rm = TRUE) +
-        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
-                         axis.text = element_text(size = 12))
-
-plot_grid(i,o,u,p)
+plot_grid(i,o)
 
 
 # examine spin rates for pitches
