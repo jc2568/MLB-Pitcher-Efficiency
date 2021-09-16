@@ -1,8 +1,11 @@
 ---
-title: "CourseProject_607"
+html_document: default
 author: "Joshua Chu"
-date: "9/27/2020"
-output: html_document
+date: "10/23/2020"
+line: null
+pdf_document: default
+subtitle: Project Supplemental Material
+title: 'DSC607: Intro to Data Mining'
 ---
 
 ```{r setup, include=FALSE}
@@ -19,47 +22,447 @@ baseball savant (MLB, 2020).
 Major League Baseball pitchers can manipulate the movement of a ball by increasing
 or decreasing the spin rate of a baseball (Nagami, 2013). There are three forces
 that influence ball movement: drag force due to air movement, gravity, and the
-Magnus force, which produces vertical and lateral ball movement (Nagami, 2013).
-Because on any given day a pitcher has little to no control on how the gravity
-or the drag force influences ball movement, manipulating the spin rate of a
-baseball can directly produce a greater or lesser Magnus force.
+Magnus force, which the produces vertical and lateral ball movement (Nagami, 2013).
+Since on any given day a pitcher has no control on how the gravity impacts 
+or influences ball movement, manipulating the spin rate of a baseball can
+directly increase or decrease Magnus force.
+
+Evaluating the spin rates of different pitch types for Major League Baseball 
+pitchers may reveal novel relationships between spin rates and resulting metrics
+such as total number of strikeouts, earned runs allowed, strikeout percentage,
+and more. The following analysis will examine the spin rates of baseballs and
+the relationship with strikeout percentage.
 
 
+## Required Packages
 
-```{r }
+The following packages are required for data manipulation (dplyr), constructing the
+required visuals (ggplot2, cowplot, corrplot), and modeling the data using a
+Bayesian Network model (e1071, factoextra, tidyverse, caret).
+
+```{r message = FALSE, warning=FALSE}
 # load the required libraries for project
-library(dplyr); library(ggplot2); library(cowplot); library(corrplot); library(ggpubr)
+library(dplyr); library(ggplot2); library(cowplot); library(corrplot); 
+library(ggpubr); library(factoextra); library(e1071); library(tidyverse);
+library(caret)
+```
 
 
+## Data Loading and Summary
+
+The dataset was obtained from Baseball Savant, which is a website that provides
+standard and advance baseball statistics accumulated since 1950 and 2015,
+respectively (Savant, 2020).
+
+```{r}
 # remove variables saved in environment
 rm(list = ls())
 
-
 # load dataset and rename columns
 x <- read.csv("stats.csv")
-colnames(x) <- c("last_name", "first_name", "year", "player_age", "games", "innings_pitched", "hits", 
-                 "single", "double", "triple", "home_run", "strikeouts", "walks", "percent_strikeouts",
-                 "percent_walks", "batting_avg", "slg_percent", "on_base_percent", "on_base_plus_slug",
-                 "wins", "loss", "quality_starts", "starts", "no_slider", "speed_slider", "spin_slider", 
-                 "no_changeup", "speed_changeup", "spin_changeup", "no_curve", "speed_curve", "spin_curve",
-                 "no_fastball", "speed_fastball", 'spin_fastball')
+
+# summary statistics for the dataset
+summary(x)
 ```
 
-## Including Plots
+The data is comprised of 767 observations and 36 variables for Major League 
+Baseball pitchers for the year 2019 (Savant, 2020). Below shows the features of
+interest for this investigation. There are multiple missing values for the four
+pitch types and will need to be resolved.
 
-You can also embed plots, for example:
+     1. p_k_percent: strikeout percentage
+     2. sl_avg_spin: average slider spin rate (revolutions per minute)
+     3. ch_avg_spin: average changeup spin rate (revolutions per minute)
+     4. cu_avg_spin: average curveball spin rate (revolutions per minute)
+     5. fastball_avg_spin: average fastball spin rate (revolutions per minute)
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+
+## Exploratory Data Analysis
+
+A correlation plot was used to examine the relationship between the pitch types
+and strikeout percentage, as well as additional features that may reveal novel
+relationships.
+
+```{r}
+# subset numerical data from categorical
+y <- x[,c(12:19,22:35)]
+
+# correlation table
+corrplot(cor(y[,c(1:4,11:22)],use = "complete.obs"), type = "upper", 
+         tl.col = "black",tl.srt = 45, tl.cex = 1, cl.cex = 1, 
+         col=colorRampPalette(c("blue","white","red"))(200))
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+A positive relationship exists between the spin rates and the total number of 
+strikeouts and strikeout percentage. While interesting, the percent strikeout 
+metric is more valuable because the frequency includes the total number of
+batters a pitcher faces throughout the season (Sawchik, 2018). For instance, a
+strikeout total of 138 may not seem impressive since many pitchers accumulate 
+over 150 strikeouts for an entire season. However, examining the strikeout 
+percentage for the same player, which is 47.8% and the best mark in MLB for 2019,
+we see this pitcher is highly efficient since his strikeout percentage is a much
+higher frequency than the MLB average (22%; summary stats shown above). Therefore,
+the strikeout percentage and four pitch types will be utilized for further
+investigation. To confirm a linear relationship, a linear regression between the
+strikeout percentage and pitch types were performed.
+
+```{r message = FALSE}
+# linear regressions to confirm relationship between strikeout percentage
+# and the four different pitch types
+a <- ggplot(y,aes(sl_avg_spin,p_k_percent))+geom_point(na.rm = TRUE) +
+        stat_smooth(method = "lm", se = FALSE, na.rm = TRUE, color = "red", size = 1.5) +
+        stat_cor(label.x = 1750, label.y = 47, na.rm = TRUE, size = 3) +
+        stat_regline_equation(label.x = 1750, label.y = 44, na.rm = TRUE, size = 3) +
+        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
+                         axis.text = element_text(size = 12))
+
+b <- ggplot(y,aes(ch_avg_spin,p_k_percent))+geom_point(na.rm = TRUE) +
+        stat_smooth(method = "lm", se = FALSE, na.rm = TRUE, color = "red", size = 1.5) +
+        stat_cor(label.x = 2000, label.y = 45, na.rm = TRUE, size = 3) +
+        stat_regline_equation(label.x = 2000, label.y = 42, na.rm = TRUE, size = 3) +
+        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
+                         axis.text = element_text(size = 12))
+
+c <- ggplot(y,aes(cu_avg_spin,p_k_percent))+geom_point(na.rm = TRUE) +
+        stat_smooth(method = "lm", se = FALSE, na.rm = TRUE, color = "red", size = 1.5) +
+        stat_cor(label.x = 1000, label.y = 45, na.rm = TRUE, size = 3) +
+        stat_regline_equation(label.x = 1000, label.y = 42, na.rm = TRUE, size = 3) +
+        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
+                         axis.text = element_text(size = 12))
+
+d <- ggplot(y,aes(fastball_avg_spin,p_k_percent))+geom_point(na.rm = TRUE) +
+        stat_smooth(method = "lm", se = FALSE, na.rm = TRUE, color = "red", size = 1.5) +
+        stat_cor(label.x = 1750, label.y = 45, na.rm = TRUE, size = 3) +
+        stat_regline_equation(label.x = 1750, label.y = 42, na.rm = TRUE, size = 3) +
+        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
+                         axis.text = element_text(size = 12))
+
+plot_grid(a,b,c,d)
+```
+
+According to the regression analysis, all regression models were statistically
+significant with a p value < 0.05. The coefficient of determination varies
+among the models, with fastballs performing the best and the changeup performing
+the worst among all pitch types. Now that I confirmed a relationship exists, we
+can move on to using the dataset to categorize pitchers according to this
+relationship.
+
+```{r}
+# subset dataset by pitch spin rates
+df  <- x[,c(14,26,29,32,35)]
+
+# summary statistics for the dataset
+summary(df)
+```
+
+The original dataset was further partitioned to only include the strikeout percentage
+and spin rates for the aforementioned pitch types. Spin rates are of particular 
+interest to pitchers because the 'movement' of a ball can be altered by different
+spin rates, which in turn could impact a batters perception for the balls 
+trajectory, inducing more swing and misses, and generating a large strikeout
+percentage (Nagami, 2013).
+
+Again, examining the summary statistics reveals missing values are still 
+prevalent for most features in the dataset with the strikeout percentage variable
+being the exception. Changeups, on average, possess the lowest spin rates for 
+all pitch types, and the curveball and slider have the fastest. The minimum 
+value for the changeup is much smaller than the other pitch types. In all cases,
+the median and mean do not differ by much, indicating there are few to no 
+outliers present in the dataset.
+
+```{r}
+# histogram for strikeout percentage
+ggplot(df,aes(p_k_percent)) + geom_histogram(color="black", fill="white", bins = 40,na.rm = TRUE) +
+        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
+                         axis.text = element_text(size = 12))
+```
+
+The strikeout percentage attribute has a normal distribution, with an odd
+frequency at the zero marker. This likely indicates there are multiple picthers
+with a zero strikeout percentage. Because this feature is normally distributed, 
+no other manipulations to this variable will be performed. Since the data are
+normally distributed, I could use the quartiles identified in the summary stats
+to assign pitchers to categories, but this will be investigated later.
+
+```{r}
+# examine spin rates for pitches
+q <- ggplot(df,aes(sl_avg_spin))+geom_histogram(color="black", fill="white", bins = 40, na.rm = TRUE) +
+        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
+                         axis.text = element_text(size = 12))
+
+r <- ggplot(df,aes(ch_avg_spin))+geom_histogram(color="black", fill="white", bins = 40, na.rm = TRUE) +
+        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
+                         axis.text = element_text(size = 12))
+
+s <- ggplot(df,aes(cu_avg_spin))+geom_histogram(color="black", fill="white", bins = 40, na.rm = TRUE) +
+        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
+                         axis.text = element_text(size = 12))
+
+t <- ggplot(df,aes(fastball_avg_spin))+geom_histogram(color="black", fill="white", bins = 40, na.rm = TRUE) +
+        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
+                         axis.text = element_text(size = 12))
+
+plot_grid(q,r,s,t)
+```
+
+Surprisingly, the spin rates for all four pitch types are normally distributed.
+Consistent with the summary statistics, the changeup has the smallest mean
+compared to the other three pitch types. Visually, the fastball feature appears
+to have more data points than the other, however, replacing the NA values with 
+the mean of each pitch type should resolve any feature size bias.
 
 
+## Determine the Number of Pitcher Categories Using Cluster Analysis
+
+```{r}
+# eliminate NAs from dataset and replace with 0
+df[is.na(df)] <- 0
+
+# convert to dataframe
+df  <- data.frame(df)
+
+# scale data
+df <- scale(df)
+```
+
+As noted earlier, NAs were discovered in the dataset and needed to be removed
+prior to the analysis. All missing values were converted to 0 and the dataset 
+was formatted to a data frame, followed by scaling the data to make the 
+variables comparable.
+
+```{r}
+# determine the number of clusters using the elbow method
+fviz_nbclust(df, kmeans, method = "wss")
+```
+
+The above plot was utilized to identify the optimal number of clusters needed to
+perform the K means cluster analysis. df is the data frame the function will use
+to determine the number of clusters; kmeans is a partitioning arguement indicating
+the cluster method; and the final variable is the method used to estimate the optimal
+number of clusters. Using the elbow method, the optimal number of clusters was 
+determined to be 5 (Guide, 2020). 
+
+```{r}
+# cluster analysis
+k <- kmeans(df, centers = 5, nstart = 25)
+fviz_cluster(k, data = df)
+```
+
+kmeans was the function utilized to construct the cluster plot: df is the data
+frame, the number of centers was determine to be 5 (previous step), and the 
+nstart indicates the number of random sets that should be attempted and reports
+on the 'best' clustering configuration (Guide, 2020).
+
+All clusters but 4, appear to overlap with one or more additional clusters. 
+Cluster 2 appears to contain 2 separate clusters within this larger cluster, and
+may benefit from sub-clustering. Group 4 is interesting because it appears very 
+different from the other groups based on its distance from them, and may 
+indicate an outlier group. Further analysis identified this group possessed 
+zeros for all pitch types, which indicates the spin rates for all of these 
+pitchers did not have any usable data (i.e. all values were NAs). A few of the
+records from the original dataset containing the NAs can be observed below.
+
+```{r}
+# examine the last 6 rows of the original dataset
+tail(x[,c(14,26,29,32,35)])
+```
+
+Originally, I thought the dataset had random NAs throughout the features, not
+necessarily consecutive records having NAs. Now that these have been identified,
+the pitchers that did not contain usable data were removed (records 707 through
+767) and the additional missing values will be replaced with the average values 
+for their respective features (shown below). The cluster analysis was repeated 
+using a center number of four instead of five.
+
+```{r}
+# subset dataset by pitch spin rates
+df  <- x[1:706,c(14,26,29,32,35)]
+
+# replace NAs with average of each feature
+df$sl_avg_spin[is.na(df$sl_avg_spin)] <- 2401
+df$ch_avg_spin[is.na(df$ch_avg_spin)] <- 1774
+df$cu_avg_spin[is.na(df$cu_avg_spin)] <- 2490
+df$fastball_avg_spin[is.na(df$fastball_avg_spin)] <- 2259
+
+# convert to dataframe
+df  <- data.frame(df)
+
+# scale data
+df1 <- scale(df)
+```
+
+```{r}
+# cluster analysis
+k1 <- kmeans(df1, centers = 4, nstart = 25)
+fviz_cluster(k1, data = df1)
+```
+
+While the presumed outliers have shifted toward the other data points, there 
+remains considerable overlap between all clusters. The poor separation suggests
+the Bayesian Network model may produce poor results when attempting to catagorize
+pitchers. The next two plots lowered the number of centers to try and reduce the
+overlap between clusters.
+
+```{r}
+# cluster analysis
+k1 <- kmeans(df1, centers = 3, nstart = 25)
+fviz_cluster(k1, data = df1)
+```
+
+```{r}
+# cluster analysis
+k1 <- kmeans(df1, centers = 2, nstart = 25)
+fviz_cluster(k1, data = df1)
+```
+
+Reducing the number of centers progressively improved the clustering of the data
+points. While the majority of the data points are located near the center of the
+plot, there is a better separation between the clusters than previously seen. To
+try and completely separate the clusters, the cmeans function was used to resolve
+the 'fuzzy' nature of the current cluster results (Tan, 2018).
+
+```{r}
+# use cmeans to resolve the overlap between clusters 1 and 2
+k2 <- cmeans(df1, centers = 2)
+fviz_cluster(list(data = df1, cluster=k2$cluster), 
+             ellipse.type = "norm",
+             ellipse.level = 0.85,
+             palette = "jco",
+             ggtheme = theme_minimal())
+```
+
+Using the same number of clusters as before (i.e. k = 2), the cmeans function was
+used as an alternative function to resolve the overlap between clusters 1 and 2. 
+Additional parameters were used in the cmeans function, however, these parameters
+failed to improve the results and were eliminated for simplicity.
+
+The function fviz_cluster was used to visualize the plot using a list object as
+the cluster components. The data to be plotted is found in df1, and the clusters
+each data point is assigned to is given by the cluster arguement. The next two 
+arguements places ellipses around the data points that belong to each cluster,
+while enclosing only 85% of the data points. Finally, the last two arguements
+are for visualization purposes only. 
+
+Visually comparing this plot with the previous plot (where k = 2), there does
+not appear to be any differences or improvements in separating the two clusters.
+Overall, the results suggest I should use 2 pitching catagories (e.g. below 
+average and above average) to assign pitchers. Increasing the number of 
+assignments will likely reduce the accuracy of the model. 
+
+
+## Prepare Data for Bayesian Network Modeling
+
+Missing values have been addressed and the number of pitching assignments have
+been determined. Now that I know the required structure of the dataset, I need
+to prepare the data for analysis. The first step is to construct a single pitch
+column, which would combine all of pitch types into a single feature.
+
+```{r}
+# convert to dataframe
+df2  <- data.frame(df)
+
+# prepare dataset for analysis
+c  <- df2[,1:2]
+c1 <- df2[,c(1,3)]
+c2 <- df2[,c(1,4)]
+c3 <- df2[,c(1,5)]
+
+c<-mutate(c,"spin_slider")
+colnames(c) <- c("percent_strikeouts", "spin_rate", "pitch")
+c1<-mutate(c1,"spin_changeup")
+colnames(c1) <- c("percent_strikeouts", "spin_rate", "pitch")
+c2<-mutate(c2,"spin_curve")
+colnames(c2) <- c("percent_strikeouts", "spin_rate", "pitch")
+c3<-mutate(c3,"spin_fastball")
+colnames(c3) <- c("percent_strikeouts", "spin_rate", "pitch")
+e<-rbind(c,c1,c2,c3)
+```
+
+The next step is to construct a new column to assign pitching effectiveness. 
+This new feature will be called pitch_assignment and will be given a below average
+or above average designation based on being below or above the strikeout 
+percentage for the particular record. Following this assignment, the strikeout
+percentage was removed from the data frame prior to analysis, and all variables
+were converted to factors, a necessary transformation when constructing a Bayesian
+Network model in R.
+
+```{r}
+# assign each pitch to a category; categories were determined using the percent
+# strikeout quartiles
+e <- mutate(e,pitch_assignment = 0)
+e$pitch_assignment[e$percent_strikeouts <= mean(e$percent_strikeouts)] <- "Below_avg"
+e$pitch_assignment[e$percent_strikeouts > mean(e$percent_strikeouts)] <- "Above_avg"
+
+# construct final dataset
+sub_e <- e[,c(2:4)]
+final_e <- sub_e
+final_e$spin_rate <- as.factor(final_e$spin_rate)
+final_e$pitch <- as.factor(final_e$pitch)
+final_e$pitch_assignment <- as.factor(final_e$pitch_assignment)
+```
+
+A training and testing set was constructed for the model. Using the createDataPartition
+function splits the data into a 85% training and 15% testing set. Once the two
+sets were made, basic statistics were recorded for both sets of data.
+
+```{r}
+# the createDataPartition does a stratified random split dividing the data into 
+# 85% training and 15% testing
+trn <- createDataPartition(y = final_e$pitch_assignment, p = 0.85, list = FALSE)
+training <- final_e[trn,]
+test <- final_e[-trn,]
+
+# determine the number of records for each dataset
+c(Training=nrow(training),Test=nrow(test))
+
+# find the number of records for each pitching assignment
+c(Training=table(training$pitch_assignment),Test=table(test$pitch_assignment))
+
+# find the percentage of records for each dataset
+c(Training=prop.table(table(training$pitch_assignment)),Test=prop.table(table(test$pitch_assignment)))
+```
+
+The training and test set contains 2401 and 423 records, respectively, consistent
+with an 85% and 15% split. By the numbers, the below average category is more
+abundant for the training and testing dataset. Examining the distributions between
+the two datasets for each category, the percentages do not vary, indicating there
+is not an extreme bias towards one category between the two datasets. This is
+important because if the training set would flip the frequencies for each category,
+model predictions may be inaccurate due to inconsistencies between the datasets.
+
+
+## Perform Bayesian Network Modeling
+
+```{r}
+# train the model
+Naive_Bayes_Model <- naiveBayes(pitch_assignment ~., data=training)
+
+
+# predicitons
+NB_Predictions <- predict(Naive_Bayes_Model,test)
+table(NB_Predictions,test$pitch_assignment)
+```
+
+According to the table above, predicting an Above_avg pitcher is only 47% accurate
+and a Below_avg pitcher increases to 62%. This is considerably better than other
+predicted models that I have not shown, however, improvements to the dataset or how
+the analysis is performed is required. One immediate idea is gathering strikeout
+percentage results for each individual pitch type, rather than using the overall
+percentage recorded for a pitcher. Logically this makes sense because each pitcher
+favors a specific pitch to strikeout a batter. Including this data into the model
+would likely improve the predictive power and accuracy.
 
 
 ## References
 
 Advanced Media, MLB. (2020). Retrieved from https://baseballsavant.mlb.com/leaderboard/custom?year=2019&type=pitcher&filter=&sort=4&sortDir=asc&min=q&selections=xba,xslg,xwoba,xobp,xiso,exit_velocity_avg,launch_angle_avg,barrel_batted_rate,&chart=false&x=xba&y=xba&r=no&chartType=beeswarm. Date Accessed: Sept 27, 2020.
 
+UC Business Analytics R Programming Guide. (2020). K-means Cluster Analysis. Retrieved from https://uc-r.github.io/kmeans_clustering. Accessed Date: Oct 15, 2020.
+
 Nagami, T., Higuchi, T., & Kanosue, K. (2013). How baseball spin influences the performance of a pitcher. The Journal of Physical Fitness and Sports Medicine, 2(1), 63-68. doi:10.7600/jpfsm.2.63
+
+Savant. (2020). Statcast Leaderboards. Retrieved from https://baseballsavant.mlb.com/leaderboard/custom?year=2019&type=pitcher&filter=&sort=4&sortDir=asc&min=q&selections=xba,xslg,xwoba,xobp,xiso,exit_velocity_avg,launch_angle_avg,barrel_batted_rate,&chart=false&x=xba&y=xba&r=no&chartType=beeswarm. Accessed Date: September 20, 2020.
+
+Sawchik, T. (2018). Baseball’s Top Staffs Have Come Around On The High-Spin Fastball. Retrieved from https://fivethirtyeight.com/features/baseballs-top-staffs-have-come-around-on-the-high-spin-fastball/. Accessed Date: Sept 28, 2020.
+
+Tan, P.-N., Steinbach, M., Karpatne, A., & Kumar, V. (2018). Introduction to Data Mining: Pearson; 2nd Edition.

@@ -2,78 +2,119 @@
 # strikeout percentage?
 
 
-# load libraries
-library(dplyr); library(ggplot2); library(cowplot); library(corrplot); library(ggpubr);
-library(tidyr)
+## load libraries
+#library(dplyr); library(ggplot2); library(cowplot); library(corrplot); library(ggpubr);
+#library(tidyr)
+library(dplyr); library(ggplot2); library(cowplot); library(corrplot); 
+library(ggpubr); library(factoextra); library(e1071); library(tidyverse);
+library(caret)
 
 
+## Data Loading and Summary
 # remove variables saved in environment
 rm(list = ls())
 
-
 # load dataset and rename columns
 x <- read.csv("stats.csv")
-colnames(x) <- c("last_name", "first_name", "year", "player_age", "games", "innings_pitched", "hits", 
-                 "single", "double", "triple", "home_run", "strikeouts", "walks", "percent_strikeouts",
-                 "percent_walks", "batting_avg", "slg_percent", "on_base_percent", "on_base_plus_slug",
-                 "wins", "loss", "quality_starts", "starts", "no_slider", "speed_slider", "spin_slider", 
-                 "no_changeup", "speed_changeup", "spin_changeup", "no_curve", "speed_curve", "spin_curve",
-                 "no_fastball", "speed_fastball", 'spin_fastball')
+
+# subset dataset by pitch spin rates
+df  <- x[,c(14,26,29,32,35)]
+
+# summary statistics for the dataset
+summary(df)
 
 
-# summary statistics
-summary(x)
+## EDA
+# subset the dataset for analysis
+y <- x[,c(12:19,22:35)]
+
+# correlation table
+corrplot(cor(y[,c(1:4,11:22)],use = "complete.obs"), type = "upper", tl.col = "black", 
+         tl.srt = 45, tl.cex = 1, cl.cex = 1, col=colorRampPalette(c("blue","white","red"))(200))
 
 
-# histograms for strikeouts, innings pitched, quality starts, and games
-i <- ggplot(x,aes(strikeouts)) + geom_histogram(color="black", fill="white", bins = 40, na.rm = TRUE) +
+ggplot(df,aes(p_k_percent)) + geom_histogram(color="black", fill="white", bins = 40,na.rm = TRUE) +
         theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
                          axis.text = element_text(size = 12))
-
-o <- ggplot(x,aes(percent_strikeouts)) + geom_histogram(color="black", fill="white", bins = 40,na.rm = TRUE) +
-        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
-                         axis.text = element_text(size = 12))
-
-
-plot_grid(i,o)
-
 
 # examine spin rates for pitches
-q <- ggplot(x,aes(spin_slider))+geom_histogram(color="black", fill="white", bins = 40, na.rm = TRUE) +
+q <- ggplot(df,aes(sl_avg_spin))+geom_histogram(color="black", fill="white", bins = 40, na.rm = TRUE) +
         theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
                          axis.text = element_text(size = 12))
 
-r <- ggplot(x,aes(spin_changeup))+geom_histogram(color="black", fill="white", bins = 40, na.rm = TRUE) +
+r <- ggplot(df,aes(ch_avg_spin))+geom_histogram(color="black", fill="white", bins = 40, na.rm = TRUE) +
         theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
                          axis.text = element_text(size = 12))
 
-s <- ggplot(x,aes(spin_curve))+geom_histogram(color="black", fill="white", bins = 40, na.rm = TRUE) +
+s <- ggplot(df,aes(cu_avg_spin))+geom_histogram(color="black", fill="white", bins = 40, na.rm = TRUE) +
         theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
                          axis.text = element_text(size = 12))
 
-t <- ggplot(x,aes(spin_fastball))+geom_histogram(color="black", fill="white", bins = 40, na.rm = TRUE) +
+t <- ggplot(df,aes(fastball_avg_spin))+geom_histogram(color="black", fill="white", bins = 40, na.rm = TRUE) +
         theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
                          axis.text = element_text(size = 12))
 
 plot_grid(q,r,s,t)
 
+# eliminate NAs from dataset and replace with 0
+df[is.na(df)] <- 0
 
-# subset the dataset for analysis
-#y <- x[x$innings_pitched <= 100,c(12:19,22:35)]
-y <- x[,c(12:19,22:35)]
+# convert to dataframe
+df  <- data.frame(df)
 
+# scale data
+df <- scale(df)
 
-# correlation table
-corrplot(cor(y[,c(1:4,11:22)],use = "complete.obs"), type = "upper", tl.col = "black", 
-         tl.srt = 45, tl.cex = 1.2, cl.cex = 1.2, col=colorRampPalette(c("blue","white","red"))(200))
+# determine the number of clusters using the elbow method
+fviz_nbclust(df, kmeans, method = "wss")
 
+# cluster analysis
+k <- kmeans(df, centers = 5, nstart = 25)
+fviz_cluster(k, data = df)
 
-# EDA plots
-d <- y[,c(3,13,16,19,22)]
-c <- d[,1:2]
-c1 <- d[,c(1,3)]
-c2 <- d[,c(1,4)]
-c3 <- d[,c(1,5)]
+# subset dataset by pitch spin rates
+df  <- x[1:706,c(14,26,29,32,35)]
+
+# replace NAs with average of each feature
+df$sl_avg_spin[is.na(df$sl_avg_spin)] <- 2401
+df$ch_avg_spin[is.na(df$ch_avg_spin)] <- 1774
+df$cu_avg_spin[is.na(df$cu_avg_spin)] <- 2490
+df$fastball_avg_spin[is.na(df$fastball_avg_spin)] <- 2259
+
+# convert to dataframe
+df  <- data.frame(df)
+
+# scale data
+df1 <- scale(df)
+
+# cluster analysis
+k1 <- kmeans(df1, centers = 4, nstart = 25)
+fviz_cluster(k1, data = df1)
+
+# cluster analysis
+k1 <- kmeans(df1, centers = 3, nstart = 25)
+fviz_cluster(k1, data = df1)
+
+# cluster analysis
+k1 <- kmeans(df1, centers = 2, nstart = 25)
+fviz_cluster(k1, data = df1)
+
+# use cmeans to resolve the overlap between clusters 1 and 2
+k2 <- cmeans(df1, centers = 2)
+fviz_cluster(list(data = df1, cluster=k2$cluster), 
+             ellipse.type = "norm",
+             ellipse.level = 0.85,
+             palette = "jco",
+             ggtheme = theme_minimal())
+
+# convert to dataframe
+df2  <- data.frame(df)
+
+# prepare dataset for analysis
+c  <- df2[,1:2]
+c1 <- df2[,c(1,3)]
+c2 <- df2[,c(1,4)]
+c3 <- df2[,c(1,5)]
 
 c<-mutate(c,"spin_slider")
 colnames(c) <- c("percent_strikeouts", "spin_rate", "pitch")
@@ -85,54 +126,40 @@ c3<-mutate(c3,"spin_fastball")
 colnames(c3) <- c("percent_strikeouts", "spin_rate", "pitch")
 e<-rbind(c,c1,c2,c3)
 
-ggplot(e,aes(spin_rate,percent_strikeouts,color=pitch,shape=pitch)) + geom_point(na.rm = TRUE) +
-        theme_bw() + theme(axis.title = element_text(face = "bold",size = 20),
-                           axis.text = element_text(size = 12),
-                           legend.text = element_text(size = 12),
-                           legend.title = element_text(face = "bold", size = 16)) +
-        guides(colour = guide_legend(override.aes = list(size=3, stroke=1.5)))
-        
+# assign each pitch to a category; categories were determined using the percent
+# strikeout quartiles
+summary(e)
+e <- mutate(e,pitch_assignment = 0)
+e$pitch_assignment[e$percent_strikeouts <= mean(e$percent_strikeouts)] <- "Below_avg"
+e$pitch_assignment[e$percent_strikeouts > mean(e$percent_strikeouts)] <- "Above_avg"
 
-a <- ggplot(y,aes(spin_slider,percent_strikeouts))+geom_point(na.rm = TRUE) +
-        stat_smooth(method = "lm", se = FALSE, na.rm = TRUE, color = "red", size = 1.5) +
-        stat_cor(label.x = 1750, label.y = 45, na.rm = TRUE, size = 5) +
-        stat_regline_equation(label.x = 1750, label.y = 42, na.rm = TRUE, size = 5) +
-        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
-                         axis.text = element_text(size = 12))
-
-b <- ggplot(y,aes(spin_changeup,percent_strikeouts))+geom_point(na.rm = TRUE) +
-        stat_smooth(method = "lm", se = FALSE, na.rm = TRUE, color = "red", size = 1.5) +
-        stat_cor(label.x = 2250, label.y = 45, na.rm = TRUE, size = 5) +
-        stat_regline_equation(label.x = 2250, label.y = 42, na.rm = TRUE, size = 5) +
-        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
-                         axis.text = element_text(size = 12))
-
-c <- ggplot(y,aes(spin_curve,percent_strikeouts))+geom_point(na.rm = TRUE) +
-        stat_smooth(method = "lm", se = FALSE, na.rm = TRUE, color = "red", size = 1.5) +
-        stat_cor(label.x = 1500, label.y = 45, na.rm = TRUE, size = 5) +
-        stat_regline_equation(label.x = 1500, label.y = 42, na.rm = TRUE, size = 5) +
-        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
-                         axis.text = element_text(size = 12))
-
-d <- ggplot(y,aes(spin_fastball,percent_strikeouts))+geom_point(na.rm = TRUE) +
-        stat_smooth(method = "lm", se = FALSE, na.rm = TRUE, color = "red", size = 1.5) +
-        stat_cor(label.x = 1750, label.y = 45, na.rm = TRUE, size = 5) +
-        stat_regline_equation(label.x = 1750, label.y = 42, na.rm = TRUE, size = 5) +
-        theme_bw()+theme(axis.title = element_text(face = "bold",size = 20),
-                         axis.text = element_text(size = 12))
+# construct final dataset
+sub_e <- e[,c(2:4)]
+final_e <- sub_e
+final_e$spin_rate <- as.factor(final_e$spin_rate)
+final_e$pitch <- as.factor(final_e$pitch)
+final_e$pitch_assignment <- as.factor(final_e$pitch_assignment)
 
 
-plot_grid(a,b,c,d)
+# according to ref (###) the createDataPartition does a stratified random split
+# dividing the data into 75% training and 25% testing
+trn <- createDataPartition(y = final_e$pitch_assignment, p = 0.85, list = FALSE)
+training <- final_e[trn,]
+test <- final_e[-trn,]
 
 
+prop.table(table(training$pitch_assignment))
+prop.table(table(test$pitch_assignment))
+table(training$pitch_assignment)
+table(test$pitch_assignment)
+nrow(training)
+nrow(test)
 
 
+# train the model
+Naive_Bayes_Model <- naiveBayes(pitch_assignment ~., data=training)
 
 
-
-
-
-
-
-
-
+# predicitons
+NB_Predictions <- predict(Naive_Bayes_Model,test)
+table(NB_Predictions,test$pitch_assignment)
