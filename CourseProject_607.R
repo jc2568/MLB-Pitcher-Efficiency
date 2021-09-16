@@ -160,6 +160,6 @@ nrow(test)
 Naive_Bayes_Model <- naiveBayes(pitch_assignment ~., data=training)
 
 
-# predicitons
+# predictions
 NB_Predictions <- predict(Naive_Bayes_Model,test)
 table(NB_Predictions,test$pitch_assignment)
